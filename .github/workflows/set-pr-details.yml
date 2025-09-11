@@ -35,7 +35,7 @@ jobs:
             const descriptionToAdd = `
             
             ---
-            *This section was automatically added by a workflow.* 
+            *This section was automatically added by an AI.* 
             `;
 
             // Only update if the content hasn't been added already
