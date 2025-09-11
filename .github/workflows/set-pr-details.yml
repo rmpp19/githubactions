@@ -22,7 +22,7 @@ jobs:
 
             // --- 1. Validate PR Title ---
             const title = pr.title;
-            const titleRegex = /^\[DXQ-\d+\].+/; // Matches "[DXQ-123] Some Text"
+            const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
 
             if (!titleRegex.test(title)) {
               core.setFailed("Error: PR Title must start with a ticket number (e.g., '[DXQ-123] My Feature').");
@@ -35,7 +35,7 @@ jobs:
             const descriptionToAdd = `
             
             ---
-            *This section was automatically added by a workflow.* **Jira Ticket:** [${title.match(/DXQ-\d+/)[0]}](https://your-jira-instance.net/browse/${title.match(/DXQ-\d+/)[0]})
+            *This section was automatically added by a workflow.* 
             `;
 
             // Only update if the content hasn't been added already
