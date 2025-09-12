@@ -2,7 +2,7 @@ name: Enhance and Update PR Details
 
 on:
   pull_request:
-    types: [opened, edited, synchronize] # Added 'synchronize' to trigger on new pushes
+    types: [opened, edited, synchronize] # Triggers on creation, title edits, and new pushes
 
 jobs:
   enhance-and-validate:
@@ -11,7 +11,7 @@ jobs:
       pull-requests: write # To update the PR description
       contents: read       # To read commit details
     steps:
-      - name: Validate Title and Update Description with Commits
+      - name: Validate Title and Update Description
         uses: actions/github-script@v7
         with:
           script: |
@@ -21,7 +21,7 @@ jobs:
               return;
             }
 
-            // --- 1. Validate PR Title (no changes here) ---
+            // --- 1. Validate PR Title ---
             const title = pr.title;
             const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
             if (!titleRegex.test(title)) {
@@ -29,41 +29,46 @@ jobs:
               return;
             }
 
-            // --- 2. Fetch all commits from the PR ---
+            // --- 2. Extract Jira Ticket and Create Link ---
+            const jiraTicketMatch = title.match(/DXQ-\d+/i);
+            const jiraTicketId = jiraTicketMatch[0].toUpperCase();
+            // ❗ IMPORTANT: Replace with your actual Jira URL
+            const jiraUrl = `https://your-jira-instance.net/browse/${jiraTicketId}`;
+            const jiraLink = `[${jiraTicketId}](${jiraUrl})`;
+            const jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
+
+            // --- 3. Fetch all commits from the PR ---
             const { data: commits } = await github.rest.pulls.listCommits({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number,
             });
 
-            // --- 3. Format the commit list into markdown ---
-            const commitSummary = commits.map(c => {
-              const firstLine = c.commit.message.split('\n')[0];
-              return `* [\`${c.sha.substring(0, 7)}\`](${c.html_url}) - ${firstLine}`;
-            }).join('\n');
-
-            if (commits.length === 0) {
-              console.log("No commits found to summarize.");
-              return;
+            // --- 4. Format the commit list into markdown ---
+            let commitSummary = "No new commits found.";
+            if (commits.length > 0) {
+              commitSummary = commits.map(c => {
+                const firstLine = c.commit.message.split('\n')[0];
+                return `* [\`${c.sha.substring(0, 7)}\`](${c.html_url}) - ${firstLine}`;
+              }).join('\n');
             }
+            const commitSection = `### 🚀 Commit Updates\n${commitSummary}`;
 
-            // --- 4. Construct the new PR body ---
+            // --- 5. Construct the new PR body ---
             const currentBody = pr.body || '';
-            const separator = "\n\n---\n### 🚀 Commit Updates\n";
-            let newBody;
+            const botSeparator = "\n\n---\n"; // Defines the start of the automated section
+            let userDescription = currentBody;
 
-            const separatorIndex = currentBody.indexOf(separator.trim());
-
+            // Find the user's original description by stripping out the old bot content
+            const separatorIndex = currentBody.indexOf(botSeparator);
             if (separatorIndex !== -1) {
-              // If the separator already exists, replace the content below it
-              const bodyAbove = currentBody.substring(0, separatorIndex);
-              newBody = bodyAbove + separator + commitSummary;
-            } else {
-              // If the separator isn't there, append it along with the summary
-              newBody = currentBody + separator + commitSummary;
+              userDescription = currentBody.substring(0, separatorIndex);
             }
 
-            // --- 5. Update the PR description ---
+            // Assemble the new body by preserving the user's text and adding the fresh bot content
+            const newBody = userDescription.trim() + botSeparator + jiraSection + "\n\n" + commitSection;
+
+            // --- 6. Update the PR description ---
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
