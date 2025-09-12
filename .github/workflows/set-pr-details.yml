@@ -65,13 +65,10 @@ jobs:
             
             let userDescription = currentBody;
 
-            const markerIndex = currentBody.indexOf(botSeparator);
-            console.log("markerIndex:", markerIndex);
+            const markerIndex = currentBody.indexOf("---");
             if (markerIndex !== -1) {
               // If marker exists, everything before it is the user's description
               userDescription = currentBody.substring(0, markerIndex);
-              console.log("currentBody:", currentBody);
-              console.log("userDescription:", userDescription);
             }
 
             // Assemble all the bot's content into one block
