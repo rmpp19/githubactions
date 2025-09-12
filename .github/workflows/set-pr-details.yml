@@ -27,7 +27,6 @@ jobs:
             const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
             if (!titleRegex.test(title)) {
               core.setFailed("Error: PR Title must contain a ticket number (e.g., 'DXQ-123 My Feature').");
-              return; // Stop execution if the title is invalid
             } else {
               // --- 2. Extract Jira Ticket and Create Link ---
               const jiraTicketMatch = title.match(/DXQ-\d+/i);
