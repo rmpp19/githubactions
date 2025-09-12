@@ -1,16 +1,17 @@
-name: Enhance PR Details
+name: Enhance and Update PR Details
 
 on:
   pull_request:
-    types: [opened, edited] # Triggers on creation and when the title is edited
+    types: [opened, edited, synchronize] # Added 'synchronize' to trigger on new pushes
 
 jobs:
   enhance-and-validate:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write # Required to update the PR description
+      pull-requests: write # To update the PR description
+      contents: read       # To read commit details
     steps:
-      - name: Validate Title and Append Description
+      - name: Validate Title and Update Description with Commits
         uses: actions/github-script@v7
         with:
           script: |
@@ -20,35 +21,52 @@ jobs:
               return;
             }
 
-            // --- 1. Validate PR Title ---
+            // --- 1. Validate PR Title (no changes here) ---
             const title = pr.title;
             const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
-
             if (!titleRegex.test(title)) {
-              core.setFailed("Error: PR Title must start with a ticket number (e.g., '[DXQ-123] My Feature').");
-              return; // Stop the script if the title is invalid
-            }
-
-            // --- 2. Append to PR Description ---
-            const currentBody = pr.body || ''; // Handle cases where the PR body is initially empty
-            
-            const descriptionToAdd = `
-            
-            ---
-            *This section was automatically added by an AI.* 
-            `;
-
-            // Only update if the content hasn't been added already
-            if (currentBody.includes("This section was automatically added")) {
-              console.log("PR description already contains the automated section. Skipping update.");
+              core.setFailed("Error: PR Title must contain a ticket number (e.g., 'DXQ-123 My Feature').");
               return;
             }
 
-            const newBody = currentBody + descriptionToAdd;
+            // --- 2. Fetch all commits from the PR ---
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
 
+            // --- 3. Format the commit list into markdown ---
+            const commitSummary = commits.map(c => {
+              const firstLine = c.commit.message.split('\n')[0];
+              return `* [\`${c.sha.substring(0, 7)}\`](${c.html_url}) - ${firstLine}`;
+            }).join('\n');
+
+            if (commits.length === 0) {
+              console.log("No commits found to summarize.");
+              return;
+            }
+
+            // --- 4. Construct the new PR body ---
+            const currentBody = pr.body || '';
+            const separator = "\n\n---\n### 🚀 Commit Updates\n";
+            let newBody;
+
+            const separatorIndex = currentBody.indexOf(separator.trim());
+
+            if (separatorIndex !== -1) {
+              // If the separator already exists, replace the content below it
+              const bodyAbove = currentBody.substring(0, separatorIndex);
+              newBody = bodyAbove + separator + commitSummary;
+            } else {
+              // If the separator isn't there, append it along with the summary
+              newBody = currentBody + separator + commitSummary;
+            }
+
+            // --- 5. Update the PR description ---
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number,
-              body: newBody
+              body: newBody,
             });
