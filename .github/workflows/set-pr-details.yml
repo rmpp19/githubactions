@@ -27,6 +27,7 @@ jobs:
             const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
             if (!titleRegex.test(title)) {
               console.log("Warning: PR Title must contain a ticket number (e.g., 'DXQ-123 My Feature').");
+
             } else {
               // --- 2. Extract Jira Ticket and Create Link ---
               const jiraTicketMatch = title.match(/DXQ-\d+/i);
@@ -65,7 +66,7 @@ jobs:
             
             let userDescription = currentBody;
 
-            const markerIndex = currentBody.indexOf(invisibleMarker);
+            const markerIndex = currentBody.indexOf(botSeparator);
             console.log("markerIndex:", markerIndex);
             if (markerIndex !== -1) {
               // If marker exists, everything before it is the user's description
