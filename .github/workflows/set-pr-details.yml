@@ -36,10 +36,6 @@ jobs:
               const jiraLink = `[${jiraTicketId}](${jiraUrl})`;
               jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
             }
-
-            
-            let jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
-
             // --- 3. Fetch all commits from the PR ---
             const { data: commits } = await github.rest.pulls.listCommits({
               owner: context.repo.owner,
