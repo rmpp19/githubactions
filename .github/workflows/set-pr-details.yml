@@ -59,11 +59,14 @@ jobs:
 
             // --- 6. Construct the new PR body (CORRECTED LOGIC) ---
             const currentBody = pr.body || '';
-            // Use an invisible HTML comment as a robust separator
-            const botMarker = "";
+            
+            // This is the new, more robust separator. It includes a visible and an invisible part.
+            const botSeparator = "\n\n---\n*✍️ The content below is auto-generated and will be overwritten. Do not edit manually.*\n";
+            const invisibleMarker = "";
+            
             let userDescription = currentBody;
 
-            const markerIndex = currentBody.indexOf(botMarker);
+            const markerIndex = currentBody.indexOf(invisibleMarker);
             if (markerIndex !== -1) {
               // If marker exists, everything before it is the user's description
               userDescription = currentBody.substring(0, markerIndex);
@@ -72,13 +75,17 @@ jobs:
             // Assemble all the bot's content into one block
             const botContent = jiraSection + "\n\n" + aiSummarySection + "\n\n" + commitSection;
 
-            // Assemble the new body by preserving the user's text and adding the fresh bot content below the marker
-            const newBody = userDescription.trim() + "\n\n" + botMarker + "\n\n" + botContent;
+            // Assemble the new body using the full separator
+            const newBody = userDescription.trim() + botSeparator + "\n\n" + botContent;
 
             // --- 7. Update the PR description ---
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number,
-              body: newBody,
-            });
+            if (newBody.trim() !== currentBody.trim()) {
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                body: newBody,
+              });
+            } else {
+              console.log("No changes to PR description. Skipping update.");
+            }
