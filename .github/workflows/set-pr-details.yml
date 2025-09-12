@@ -57,19 +57,23 @@ jobs:
             // --- 5. Define the new AI Summary section ---
             const aiSummarySection = `### 🤖 AI Summary\nThis section was automatically added. AI summary will be added here.`;
 
-            // --- 6. Construct the new PR body ---
+            // --- 6. Construct the new PR body (CORRECTED LOGIC) ---
             const currentBody = pr.body || '';
-            const botSeparator = "\n\n---\n"; // Defines the start of the automated section
+            // Use an invisible HTML comment as a robust separator
+            const botMarker = "";
             let userDescription = currentBody;
 
-            // Find the user's original description by stripping out the old bot content
-            const separatorIndex = currentBody.indexOf(botSeparator);
-            if (separatorIndex !== -1) {
-              userDescription = currentBody.substring(0, separatorIndex);
+            const markerIndex = currentBody.indexOf(botMarker);
+            if (markerIndex !== -1) {
+              // If marker exists, everything before it is the user's description
+              userDescription = currentBody.substring(0, markerIndex);
             }
 
-            // Assemble the new body by preserving the user's text and adding all fresh bot content
-            const newBody = userDescription.trim() + botSeparator + jiraSection + "\n\n" + aiSummarySection + "\n\n" + commitSection;
+            // Assemble all the bot's content into one block
+            const botContent = jiraSection + "\n\n" + aiSummarySection + "\n\n" + commitSection;
+
+            // Assemble the new body by preserving the user's text and adding the fresh bot content below the marker
+            const newBody = userDescription.trim() + "\n\n" + botMarker + "\n\n" + botContent;
 
             // --- 7. Update the PR description ---
             await github.rest.pulls.update({
