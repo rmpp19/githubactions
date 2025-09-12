@@ -18,7 +18,6 @@ jobs:
             const pr = context.payload.pull_request;
             if (!pr) {
               console.log("Could not get pull request from context.");
-              return;
             }
 
             // --- 1. Validate PR Title ---
