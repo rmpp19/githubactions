@@ -24,18 +24,21 @@ jobs:
             // --- 1. Validate PR Title ---
             const title = pr.title;
             const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
+            let jiraSection = '';
             if (!titleRegex.test(title)) {
               core.setFailed("Error: PR Title must contain a ticket number (e.g., 'DXQ-123 My Feature').");
-              return;
+            }else{
+              // --- 2. Extract Jira Ticket and Create Link ---
+              const jiraTicketMatch = title.match(/DXQ-\d+/i);
+              const jiraTicketId = jiraTicketMatch[0].toUpperCase();
+              // ❗ IMPORTANT: Replace with your actual Jira URL
+              const jiraUrl = `https://hclsw-jirads.atlassian.net/browse/${jiraTicketId}`;
+              const jiraLink = `[${jiraTicketId}](${jiraUrl})`;
+              jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
             }
 
-            // --- 2. Extract Jira Ticket and Create Link ---
-            const jiraTicketMatch = title.match(/DXQ-\d+/i);
-            const jiraTicketId = jiraTicketMatch[0].toUpperCase();
-            // ❗ IMPORTANT: Replace with your actual Jira URL
-            const jiraUrl = `https://hclsw-jirads.atlassian.net/browse/${jiraTicketId}`;
-            const jiraLink = `[${jiraTicketId}](${jiraUrl})`;
-            const jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
+            
+            let jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
 
             // --- 3. Fetch all commits from the PR ---
             const { data: commits } = await github.rest.pulls.listCommits({
