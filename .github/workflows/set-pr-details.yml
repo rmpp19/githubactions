@@ -33,7 +33,7 @@ jobs:
             const jiraTicketMatch = title.match(/DXQ-\d+/i);
             const jiraTicketId = jiraTicketMatch[0].toUpperCase();
             // ❗ IMPORTANT: Replace with your actual Jira URL
-            const jiraUrl = `https://your-jira-instance.net/browse/${jiraTicketId}`;
+            const jiraUrl = `https://hclsw-jirads.atlassian.net/browse/${jiraTicketId}`;
             const jiraLink = `[${jiraTicketId}](${jiraUrl})`;
             const jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
 
