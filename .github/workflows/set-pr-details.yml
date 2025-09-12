@@ -22,20 +22,21 @@ jobs:
             }
 
             // --- 1. Validate PR Title ---
+            let jiraSection = '';
             const title = pr.title;
             const titleRegex = /^\s*DXQ-\d+( .*)?$/i;
-            let jiraSection = '';
             if (!titleRegex.test(title)) {
               core.setFailed("Error: PR Title must contain a ticket number (e.g., 'DXQ-123 My Feature').");
-            }else{
+              return; // Stop execution if the title is invalid
+            } else {
               // --- 2. Extract Jira Ticket and Create Link ---
               const jiraTicketMatch = title.match(/DXQ-\d+/i);
               const jiraTicketId = jiraTicketMatch[0].toUpperCase();
-              // ❗ IMPORTANT: Replace with your actual Jira URL
               const jiraUrl = `https://hclsw-jirads.atlassian.net/browse/${jiraTicketId}`;
               const jiraLink = `[${jiraTicketId}](${jiraUrl})`;
               jiraSection = `### 🎟️ Jira Ticket\n${jiraLink}`;
             }
+
             // --- 3. Fetch all commits from the PR ---
             const { data: commits } = await github.rest.pulls.listCommits({
               owner: context.repo.owner,
@@ -53,7 +54,10 @@ jobs:
             }
             const commitSection = `### 🚀 Commit Updates\n${commitSummary}`;
 
-            // --- 5. Construct the new PR body ---
+            // --- 5. Define the new AI Summary section ---
+            const aiSummarySection = `### 🤖 AI Summary\nThis section was automatically added. AI summary will be added here.`;
+
+            // --- 6. Construct the new PR body ---
             const currentBody = pr.body || '';
             const botSeparator = "\n\n---\n"; // Defines the start of the automated section
             let userDescription = currentBody;
@@ -64,10 +68,10 @@ jobs:
               userDescription = currentBody.substring(0, separatorIndex);
             }
 
-            // Assemble the new body by preserving the user's text and adding the fresh bot content
-            const newBody = userDescription.trim() + botSeparator + jiraSection + "\n\n" + commitSection;
+            // Assemble the new body by preserving the user's text and adding all fresh bot content
+            const newBody = userDescription.trim() + botSeparator + jiraSection + "\n\n" + aiSummarySection + "\n\n" + commitSection;
 
-            // --- 6. Update the PR description ---
+            // --- 7. Update the PR description ---
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
